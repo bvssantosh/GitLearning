@@ -1,0 +1,134 @@
+create database learning;
+show databases;
+use learning;
+create table student(
+sroll int, constraint mk1 primary key(sroll),
+fname varchar(20) not null,
+lname varchar(20),
+dob date not null,
+gender varchar(1) not null
+);
+
+show tables;
+alter table student modify gender varchar(1) default 'M' check(gender in ('M','F'));
+insert into student values(10,'lionel','messi','2011-06-24',default);
+select * from student;
+delete from student where sroll='10';
+
+set autocommit=0;
+
+insert into student(sroll,fname,lname,dob,gender) values(1001,'lionel','messi','2011-06-24','M'),
+(1002,'cristiano','ronaldo','2010-04-11',default),
+(1003,'aitana','bonmati','2012-07-09','F'),
+(1004,'erling','haaland','2012-11-24','M'),
+(1005,'sunil','chettri','2010-02-12',default),
+(1006,'dipa','karnakar','2011-12-26','F'),
+(1007,'mahendra singh','dhoni','2010-08-30','M'),
+(1008,'virat','chokli','2012-07-11','M'),
+(1009,'kiliyan','mbappe','2012-12-31','M'),
+(1010,'lamine','yamal','2013-09-28',default);
+select * from student;
+create table statetable(
+stateid varchar(15) primary key,
+statename varchar(20) not null);
+
+create table citytable(
+cityid varchar(15) primary key,
+stateid varchar(10) references statetable(stateid),
+cityname varchar(20) not null);
+
+insert into statetable values ('s01','jk'),
+('s02','ka'),
+('s03','tn'),
+('s04','hr'),
+('s05','wb'),
+('s06','br'),
+('s07','mh');
+insert into citytable values ('c01','s01','jammu'),
+ ('c02','s01','kashmir'),
+  ('c03','s02','bengaluru'),
+   ('c04','s02','ooty'),
+    ('c05','s03','chennai'),
+     ('c06','s03','rameswaram'),
+      ('c07','s04','gurugram'),
+       ('c08','s04','ayodha');
+create table connecttable(
+id int primary key,
+sroll int references student(sroll),
+cityid varchar(10), foreign key(cityid) references citytable(cityid));
+ insert into connecttable values(1,1001,'c02'),
+(2,1003,'c01'),
+(3,1005,'c06'),
+(4,1007,'c05'),
+(5,1009,'c02'),
+ (6,1011,'c01');
+ create table subjecttable(
+ subid varchar(10) primary key,
+ subject varchar(25) not null);
+ insert into subjecttable values('e01','english literature'),
+ ('e02','english novels'),
+ ('c01','organic chemistry'),
+ ('co2','inorganic chemistry'),
+ ('mo3','calculus'),
+ ('po5','hydraulics'),
+ ('bo9','botany'),
+ ('b10','zoology');
+ create table markstable(
+ id int unique not null,
+ sroll int references student(sroll),
+ testnum int not null,
+ subjectid varchar(10), foreign key(subjectid) references subjecttable(subid),
+ marks int check(marks between 0 and 100),primary key(sroll,testnum,subjectid));
+ insert into markstable values(1,1001,1,'e01',87),
+ (2,1001,1,'e02',79),
+ (3,1001,1,'c02',90),
+ (4,1001,2,'e01',93),
+ (5,1002,1,'m03',88),
+ (6,1002,1,'p05',85),
+ (7,1004,2,'b09',94),
+ (8,1004,2,'b10',98),
+ (9,1010,1,'p05',65),
+ (10,1010,2,'p05',97);
+ select * from student order by lname asc, fname desc ;
+ select fname from student where dob is not null;
+ update subjecttable set subid='c02' where subid='co2';
+ update subjecttable set subid='m03' where subid='mo3';
+ update subjecttable set subid='p05' where subid='po5';
+ update subjecttable set subid='b09' where subid='bo9';
+alter table student add column contactno int;
+describe student;
+alter table student add constraint mk2 check(contactno between 100 and 200);/*doubt*/
+update student set contactno=100 where contactno is null;/* related to safe mode*/
+set sql_safe_updates=0;
+alter table student drop contactno;
+describe student;
+alter table student modify fname varchar(100);
+describe student;
+alter table student rename column fname to firstname;/* renaming column */
+describe student;
+create user santosh identified by 'admin@123';
+grant select on student to santosh;
+select sroll,firstname,dob,cityname from student natural join connecttable natural join citytable;
+select sroll,firstname,dob,statename,cityname from student natural join connecttable natural join citytable natural join statetable;
+ select a.sroll,a.firstname,a.dob,b.cityname,c.statename from student a,connecttable d,citytable b,statetable c
+ where (a.sroll=d.sroll and d.cityid=b.cityid and b.stateid=c.stateid);/*alpha join*/
+ select a.sroll,a.firstname,a.dob,b.cityname,c.statename
+ from student a inner join connecttable d on (a.sroll=d.sroll)
+ inner join citytable b on d.cityid=b.cityid
+ inner join statetable c on b.stateid=c.stateid;/*beta join*/
+ select * from student;
+ SELECT b.cityname, COUNT(a.firstname) AS total
+FROM student a
+inner JOIN connecttable d ON a.sroll = d.sroll
+inner JOIN citytable b ON d.cityid = b.cityid
+GROUP BY b.cityname;
+ select a.sroll,a.firstname,b.subject from student a join markstable m on a.sroll=m.sroll
+ join subjecttable b on m.subjectid=b.subid
+ where m.testnum=1;
+ select count(a.cityname) as number_of_cities,b.statename from citytable a join statetable b on a.stateid=b.stateid group by b.statename;
+select a.firstname from student a join markstable m on a.sroll=m.sroll where m.testnum=1 and m.sroll is null;
+ 
+ 
+ 
+ 
+ 
