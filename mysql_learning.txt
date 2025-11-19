@@ -127,8 +127,125 @@ GROUP BY b.cityname;
  where m.testnum=1;
  select count(a.cityname) as number_of_cities,b.statename from citytable a join statetable b on a.stateid=b.stateid group by b.statename;
 select a.firstname from student a join markstable m on a.sroll=m.sroll where m.testnum=1 and m.sroll is null;
+/*inner join*/
+select a.stateid,a.statename,b.cityid,b.cityname from statetable a inner join citytable b on a.stateid=b.stateid;
+ /*left outer join*/
+select a.stateid,a.statename,b.cityid,b.cityname from statetable a left outer join citytable b on (a.stateid=b.stateid) where b.stateid is null;
+  /*equi join*/
+select a.stateid,a.statename,b.cityid,b.cityname from statetable a inner join citytable b on (a.stateid=b.stateid and a.stateid='s02');
+ /*non equi join*/
+select a.stateid,a.statename,b.cityid,b.cityname from statetable a inner join citytable b on (a.stateid=b.stateid and a.stateid<>'s02');
+
+-- functions --
+select upper(firstname) as firstname  from student;
+select round(1236.46,-2) from dual;
+select count(cityid) as total,stateid from citytable group by stateid;
+ -- inline view --
+ select a.stateid,a.statename, ifnull(b.ncity,'no city allocated') as number_of_cities from statetable a left outer join (select count(cityid) ncity,stateid from citytable group by stateid) b
+ on (a.stateid=b.stateid);
+ select count(sroll) as nstudent,cityid from connecttable group by cityid;
+select a.cityid,a.cityname,b.nstudent from citytable a left outer join(select count(sroll) as nstudent,cityid from connecttable group by cityid) b on 
+ (a.cityid=b.cityid);
+ select a.sroll,a.firstname,b.cityid from student a left outer join connecttable b on (a.sroll=b.sroll) where b.cityid is null;
+ select a.sroll,upper(a.firstname),b.subjectid,c.subject from student a inner join markstable b on (a.sroll=b.sroll)
+ inner join subjecttable c on (b.subjectid=c.subid);
+ -- self join --
+ -- for this you should have both primary key and foreign key in same table --
+ create table employee(
+ empid int primary key,
+ empname varchar(30) not null,
+ mid int references employee(empid)
+ );
+ insert into employee values(101,'ram',101),
+ (102,'subodh',101),
+ (103,'shyam',101),
+ (104,'jk',102);
+ select b.empid,b.empname,a.empname manager from employee a inner join employee b on (a.empid=b.mid);
+ select count(empid),mid from employee group by mid;
+ select a.empid,a.empname,b.number_of_employees from employee a inner join ( select count(empid) as number_of_employees,mid from employee group by mid) b on a.empid=b.mid;
  
+ -- subqueries --
+ select sroll,firstname,dob from student where sroll in 
+ ( select sroll from connecttable where cityid in (select cityid from citytable where cityname in ('kashmir')));
+ select sroll,firstname from student where sroll in ( select sroll from markstable where testnum=1 and marks >=50);
+ select marks from markstable where sroll in (select sroll from student);
  
+ select sroll,firstname from student where sroll in ( select sroll from markstable group by sroll having avg(marks)>70);
  
- 
- 
+ select a.sroll,a.firstname,b.testnum,b.average from student a inner join
+ ( select sroll,testnum,avg(marks) as average from markstable group by sroll,testnum having avg(marks)>60)b
+ on a.sroll=b.sroll ;
+  select testnum,avg(marks) as average  from markstable  group by testnum having testnum=1;
+select a.sroll,a.firstname,b.av,
+case 
+when b.av>90 then 'distinction'
+when b.av>80 then '1st class'
+when b.av>70 then 'distinction'
+else 'fail'
+end as result from student a inner join (select sroll,avg(marks) av from markstable
+where testnum=1 group by sroll) b on (a.sroll=b.sroll);
+-- write a query to display all the students whose birthday in december --
+select firstname from student where month(str_to_date(dob,'%Y-%m-%d'))=12;
+select firstname,timestampdiff(MONTH,dob,curdate()) as age from student;
+-- create view--
+create view stable as select * from student;
+select * from stable;
+insert into stable values (1013,'jack','sparrow','2010-09-21',default);
+select * from student;
+create view manager1 as select sroll,firstname from student where sroll between 1001 and 1005 with check option;
+select * from manager1;
+create view sturesult as 
+select a.sroll,a.firstname,b.av,
+case 
+when b.av>90 then 'distinction'
+when b.av>80 then '1st class'
+when b.av>70 then 'distinction'
+else 'fail'
+end as result from student a inner join (select sroll,avg(marks) av from markstable
+where testnum=1 group by sroll) b on (a.sroll=b.sroll);
+select * from sturesult;
+-- index --
+create index ifname on student(firstname);
+select * from student where firstname='lionel';
+-- stored procedures--
+delimiter //
+create procedure summer(in a int,in b int,out c int)
+begin
+set c:=a+b;
+end
+//
+call summer(100,400,@x);
+select @x;
+
+-- functions --
+
+create function result1(a int)
+return varchar(30) deterministic 
+begin
+declare output varchar(30);
+set output=case
+
+when a>90 then set output='distinction'
+when a>80 then  set output='1st class'
+when a>70 then set output='distinction'
+else set output='fail'
+end case;
+return output;
+end //
+delimiter ;
+
+-- create a trigger --
+create table sbackup as select * from student where sroll is null;
+show tables;
+alter table sbackup add column (username varchar(30),dt date);
+describe sbackup;
+delimiter //
+create trigger strigger after delete on student 
+for each row 
+begin
+insert into sbackup values(OLD.sroll,OLD.firstname,OLD.lname,OLD.dob,OLD.gender,user(),curdate());
+end //
+delimiter ;
+delete from student where sroll=1013;
+select * from sbackup;
+select * from student limit 30 offset 3;
